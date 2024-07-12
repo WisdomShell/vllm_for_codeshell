@@ -1,5 +1,5 @@
 """Multi-head attention."""
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import torch
 import torch.nn as nn
@@ -13,6 +13,7 @@ from vllm.model_executor.input_metadata import InputMetadata
 from vllm.model_executor.layers.triton_kernel.prefix_prefill import (
     context_attention_fwd)
 from vllm.utils import is_hip
+from vllm.model_executor.layers.rotary_embedding import get_rope
 
 _SUPPORTED_HEAD_SIZES = [64, 80, 96, 112, 128, 256]
 # Should be the same as PARTITION_SIZE in `paged_attention_v2_launcher`.
@@ -191,7 +192,6 @@ class PagedAttention(nn.Module):
 
         # Reshape the output tensor.
         return output.view(batch_size, seq_len, hidden_size)
-
 
 def _make_alibi_bias(
     alibi_slopes: torch.Tensor,
