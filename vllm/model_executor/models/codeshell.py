@@ -63,7 +63,6 @@ class CodeShellAttention(nn.Module):
         super().__init__()
         self.hidden_size = config.hidden_size
         total_num_heads = config.num_attention_heads
-        # print("Total num heads: ", total_num_heads)
         self.tensor_model_parallel_world_size = (
             get_tensor_model_parallel_world_size())
         assert total_num_heads % self.tensor_model_parallel_world_size == 0
@@ -138,7 +137,6 @@ class CodeShellAttention(nn.Module):
         )
         q, k = self.rotary_emb(positions, q, k)
 
-        key_cache, value_cache = kv_cache
         attn_output = self.attn(query=q, key=k, value=v, 
                                 kv_cache=kv_cache, attn_metadata=attn_metadata)
         attn_output, _ = self.c_proj(attn_output)
@@ -274,7 +272,7 @@ class CodeShellForCausalLM(nn.Module):
         super().__init__()
         self.config = config
         self.transformer = CodeShellModel(config, cache_config, quant_config)
-        self.lm_head_weight = self.transformer.wte.weight
+        self.lm_head = self.transformer.wte
         self.sampler = Sampler()
         self.logits_processor = LogitsProcessor(config.vocab_size,
                                                 config.vocab_size)
@@ -310,7 +308,7 @@ class CodeShellForCausalLM(nn.Module):
         params_dict = dict(self.named_parameters(remove_duplicate=False))
         for name, loaded_weight in weights:
             if "lm_head.weight" in name:
-                param = params_dict['lm_head_weight']
+                param = params_dict['lm_head.weight']
                 weight_loader = getattr(param, "weight_loader",
                                         default_weight_loader)
                 weight_loader(param, loaded_weight)
